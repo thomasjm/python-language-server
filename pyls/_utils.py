@@ -12,6 +12,8 @@ import jedi
 PY2 = sys.version_info.major == 2
 JEDI_VERSION = jedi.__version__
 
+from .docstring_converter import DocstringConverter
+
 if PY2:
     import pathlib2 as pathlib
 else:
@@ -138,11 +140,7 @@ def format_docstring(contents):
     Until we can find a fast enough way of discovering and parsing each format,
     we can do a little better by at least preserving indentation.
     """
-    contents = contents.replace('\t', u'\u00A0' * 4)
-    contents = contents.replace('  ', u'\u00A0' * 2)
-    if LooseVersion(JEDI_VERSION) < LooseVersion('0.15.0'):
-        contents = contents.replace('*', '\\*')
-    return contents
+    return DocstringConverter.to_markdown(contents)
 
 
 def clip_column(column, lines, line_number):
