@@ -246,7 +246,7 @@ class DocstringConverter:
                     # Handle weird separator lines which contain random spaces.
                     for (regex, replacement) in PotentialHeaders:
                         if regex.match(part):
-                            part = WhitespaceRegex.Replace(part, replacement)
+                            part = re.sub(WhitespaceRegex, replacement, part)
                             break
 
                     # Replace ReST style ~~~ header to prevent it being interpreted as a code block
@@ -269,8 +269,8 @@ class DocstringConverter:
                 # doesn't match Markdown's specification.
                 match = LeadingAsteriskRegex.match(part)
                 if match:
-                    self.append(match.Groups[1].Value)
-                    part = match.Groups[2].Value
+                    self.append(match.group(1))
+                    part = match.group(2)
 
             # TODO: Find a better way to handle this; the below breaks escaped
             # characters which appear at the beginning or end of a line.
@@ -284,7 +284,7 @@ class DocstringConverter:
             # TODO: Strip footnote/citation references.
 
             # Escape _, *, and ~, but ignore things like ":param \*\*kwargs:".
-            part = UnescapedMarkdownCharsRegex.Replace(part, r"\$1")
+            part = re.sub(UnescapedMarkdownCharsRegex, "\1", part)
 
             self.append(part)
 
@@ -301,7 +301,7 @@ class DocstringConverter:
             return ""
 
         for (regex, replacement) in LiteralBlockReplacements:
-            line = regex.Replace(line, replacement)
+            line = re.sub(regex, replacement, line)
 
         line = line.replace("``", "`")
         return line
@@ -320,7 +320,7 @@ class DocstringConverter:
         self._blockIndent = self.current_indent()
 
     def begin_backtick_block(self):
-        if self.current_line().StartsWith("```"):
+        if self.current_line().startswith("```"):
             self.append_line(self.current_line())
             self.push_and_set_state(self.parse_backtick_block)
             self.eat_line()
@@ -329,7 +329,7 @@ class DocstringConverter:
         return False
 
     def parse_backtick_block(self):
-        if self.current_line().StartsWith("```"):
+        if self.current_line().startswith("```"):
             self.append_line("```")
             self.append_line()
             self.pop_state()
@@ -429,10 +429,10 @@ class DocstringConverter:
     def parse_directive(self):
         # http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html#directives
 
-        match = DirectiveLikeRegex.Match(self.current_line())
-        if match.Success:
-            directive_type = match.Groups[1].Value
-            directive = match.Groups[2].Value
+        match = DirectiveLikeRegex.match(self.current_line())
+        if match:
+            directive_type = match.group(1)
+            directive = match.group(2)
 
             if directive_type == "class":
                 self._appendDirectiveBlock = True
@@ -488,7 +488,7 @@ class DocstringConverter:
         # As done by inspect.cleandoc.
         docstring = docstring.replace("\t", "        ")
 
-        lines = [x.rstrip() for x in docstring.split()]
+        lines = [x.rstrip() for x in docstring.split("\n")]
 
         if len(lines) > 0:
             first = lines[0].lstrip()
